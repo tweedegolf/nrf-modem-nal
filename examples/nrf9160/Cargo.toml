@@ -1,0 +1,18 @@
+[package]
+authors = ["Dion Dokter"]
+name = "nrf9160"
+edition = "2021"
+version = "0.1.0"
+
+[dependencies]
+cortex-m = "0.7.3"
+cortex-m-rt = "0.7.0"
+rtt-target = { version = "0.3.1", features = ["cortex-m"] }
+nrf9160-hal = "0.15.0"
+tinyrlibc = "0.2.1"
+nrf-modem-nal = { path = "../../" }
+
+# cargo build/run --release
+[profile.release]
+debug = true
+lto = true
