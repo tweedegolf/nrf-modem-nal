@@ -1,4 +1,7 @@
-use core::{str::FromStr, ops::{Deref, DerefMut}};
+use core::{
+    ops::{Deref, DerefMut},
+    str::FromStr,
+};
 
 use crate::{at::AtSocket, error::Error, to_nb_result, Modem, SocketState};
 use embedded_nal::nb;
@@ -120,7 +123,7 @@ impl FromStr for ClockTime {
             .map_err(|_| Error::UnexpectedAtResponse)?;
 
         Ok(ClockTime {
-            year: year as _,
+            year: (year + 2000) as _,
             month: month as _,
             day: day as _,
             hour: hour as _,
