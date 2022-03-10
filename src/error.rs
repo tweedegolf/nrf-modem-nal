@@ -6,6 +6,7 @@ pub enum Error {
     Fmt(core::fmt::Error),
     AtParsing(at_commands::parser::ParseError),
     NoAtResponse,
+    UnexpectedAtResponse,
 }
 
 impl From<nrfxlib::Error> for Error {

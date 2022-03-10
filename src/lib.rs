@@ -6,6 +6,7 @@ use error::Error;
 pub mod at;
 pub mod error;
 pub mod gnss;
+pub mod lte;
 pub mod tcp;
 pub mod udp;
 
