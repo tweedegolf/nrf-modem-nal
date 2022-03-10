@@ -1,4 +1,4 @@
-use core::str::FromStr;
+use core::{str::FromStr, ops::{Deref, DerefMut}};
 
 use crate::{at::AtSocket, error::Error, to_nb_result, Modem, SocketState};
 use embedded_nal::nb;
@@ -63,6 +63,20 @@ impl Modem {
 pub struct LteSocket {
     inner: AtSocket,
     state: SocketState,
+}
+
+impl Deref for LteSocket {
+    type Target = AtSocket;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl DerefMut for LteSocket {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
 }
 
 pub struct ClockTime {
