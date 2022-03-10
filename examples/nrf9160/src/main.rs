@@ -6,8 +6,12 @@ extern crate tinyrlibc;
 
 use hal::pac::{self, interrupt};
 use nrf9160_hal as hal;
-use nrf_modem_nal::embedded_nal::{TcpClientStack, SocketAddr, nb};
-use rtt_target::{rtt_init_print, rprintln};
+use nrf_modem_nal::{
+    embedded_nal::{nb, SocketAddr, TcpClientStack},
+    gnss::{GnssData, GnssOptions},
+    Modem,
+};
+use rtt_target::{rprintln, rtt_init_print};
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
@@ -29,29 +33,73 @@ fn main() -> ! {
     rprintln!("Initializing modem");
     let mut modem = nrf_modem_nal::Modem::new().unwrap();
 
+    // do_tcp(&mut modem);
+    do_gnss(&mut modem);
+
+    loop {
+        cortex_m::asm::bkpt();
+    }
+}
+
+fn do_tcp(modem: &mut Modem) {
     rprintln!("Creating TCP socket: {:?}", modem.debug());
     let mut tcp_socket = modem.socket().unwrap();
 
     rprintln!("Connect TCP socket: {:?}", modem.debug());
-    nb::block!(modem.connect(&mut tcp_socket, SocketAddr::V4("52.216.99.90:80".parse().unwrap()))).unwrap();
+    nb::block!(modem.connect(
+        &mut tcp_socket,
+        SocketAddr::V4("142.250.179.211:80".parse().unwrap())
+    ))
+    .unwrap(); // ip.jsontest.com
 
     rprintln!("Sending TCP socket: {:?}", modem.debug());
-    nb::block!(modem.send(&mut tcp_socket, "GET / HTTP/1.0\r\n\r\n".as_bytes())).unwrap();
+    nb::block!(modem.send(
+        &mut tcp_socket,
+        "GET / HTTP/1.0\nHost: ip.jsontest.com\r\n\r\n".as_bytes()
+    ))
+    .unwrap();
 
     rprintln!("Receiving TCP socket: {:?}", modem.debug());
     let mut buffer = [0; 1024];
     let received_length = nb::block!(modem.receive(&mut tcp_socket, &mut buffer)).unwrap();
 
-    rprintln!("Received: {}", core::str::from_utf8(&buffer[..received_length]).unwrap());
+    rprintln!(
+        "Received: {}",
+        core::str::from_utf8(&buffer[..received_length]).unwrap()
+    );
 
     rprintln!("Closing TCP socket: {:?}", modem.debug());
     modem.close(tcp_socket).unwrap();
 
     rprintln!("End: {:?}", modem.debug());
+}
 
-    loop {
-        cortex_m::asm::bkpt();
+fn do_gnss(modem: &mut Modem) {
+    rprintln!("Creating Gnss socket: {:?}", modem.debug());
+    let mut gnss_socket = modem.gnss_socket().unwrap();
+
+    rprintln!("Connect Gnss socket: {:?}", modem.debug());
+    modem
+        .gnss_connect(&mut gnss_socket, GnssOptions::default())
+        .unwrap();
+
+    for _ in 0..10 {
+        rprintln!("Receiving Gnss socket: {:?}", modem.debug());
+        let received = nb::block!(modem.gnss_receive(&mut gnss_socket)).unwrap();
+        match received {
+            GnssData::Nmea { buffer, length } => {
+                let nmea_str = unsafe { core::str::from_utf8_unchecked(&buffer[0..length]) };
+                rprintln!("Received nmea: {}", nmea_str);
+            }
+            GnssData::Position(p) => rprintln!("Received position: lat: {}°, long: {}°, alt: {}m, acc: {}m, speed: {}m/s, heading: {}°", p.latitude, p.longitude, p.altitude, p.accuracy, p.speed, p.heading),
+            GnssData::Agps(_) => rprintln!("Received Agps: "),
+        }
     }
+
+    rprintln!("Closing Gnss socket: {:?}", modem.debug());
+    modem.gnss_close(gnss_socket).unwrap();
+
+    rprintln!("End: {:?}", modem.debug());
 }
 
 #[link_section = ".spm"]
