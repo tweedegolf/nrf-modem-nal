@@ -15,16 +15,18 @@ pub use nrfxlib::{application_irq_handler, ipc_irq_handler, trace_irq_handler};
 
 pub struct Modem {
     state: ModemState,
+    gps_power_callback: fn(bool, &mut Self),
 }
 
 impl Modem {
-    pub fn new() -> Result<Self, Error> {
+    pub fn new(gps_power_callback: Option<fn(bool, &mut Self)>) -> Result<Self, Error> {
         nrfxlib::init()?;
         nrfxlib::modem::off()?;
         nrfxlib::modem::set_system_mode(nrfxlib::modem::SystemMode::LteMAndGnss)?;
 
         Ok(Self {
             state: ModemState::default(),
+            gps_power_callback: gps_power_callback.unwrap_or(|_, _| {}),
         })
     }
 
@@ -61,11 +63,13 @@ impl Modem {
             // Turning on
             (0, _) => {
                 // Activate GNSS without changing LTE
+                (self.gps_power_callback)(true, self);
                 nrfxlib::at::send_at_command("AT+CFUN=31", |_| {})?;
             }
             // Turning off
             (_, 0) => {
                 // Deactivate GNSS without changing LTE
+                (self.gps_power_callback)(false, self);
                 nrfxlib::at::send_at_command("AT+CFUN=30", |_| {})?;
             }
             // Staying turned on

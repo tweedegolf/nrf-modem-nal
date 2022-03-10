@@ -31,7 +31,7 @@ fn main() -> ! {
     }
 
     rprintln!("Initializing modem");
-    let mut modem = nrf_modem_nal::Modem::new().unwrap();
+    let mut modem = nrf_modem_nal::Modem::new(None).unwrap();
 
     // do_tcp(&mut modem);
     do_gnss(&mut modem);
