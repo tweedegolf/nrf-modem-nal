@@ -1,6 +1,8 @@
 #[derive(Debug)]
 pub enum Error {
     NrfModem(nrfxlib::Error),
+    NrfSys(i32),
+    AddressNotFound,
     SocketAlreadyOpen,
     SocketClosed,
     Fmt(core::fmt::Error),

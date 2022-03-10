@@ -4,6 +4,7 @@ use embedded_nal::nb;
 use error::Error;
 
 pub mod at;
+pub mod dns;
 pub mod error;
 pub mod gnss;
 pub mod lte;
@@ -65,13 +66,13 @@ impl Modem {
             // Turning on
             (0, _) => {
                 // Activate GNSS without changing LTE
-                (self.gps_power_callback)(true, self);
+                (self.gps_power_callback)(true, self)?;
                 nrfxlib::at::send_at_command("AT+CFUN=31", |_| {})?;
             }
             // Turning off
             (_, 0) => {
                 // Deactivate GNSS without changing LTE
-                (self.gps_power_callback)(false, self);
+                (self.gps_power_callback)(false, self)?;
                 nrfxlib::at::send_at_command("AT+CFUN=30", |_| {})?;
             }
             // Staying turned on

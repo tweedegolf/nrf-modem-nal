@@ -7,7 +7,7 @@ extern crate tinyrlibc;
 use hal::pac::{self, interrupt};
 use nrf9160_hal as hal;
 use nrf_modem_nal::{
-    embedded_nal::{nb, SocketAddr, TcpClientStack},
+    embedded_nal::{nb, SocketAddr, TcpClientStack, Dns},
     gnss::{GnssData, GnssOptions},
     Modem,
 };
@@ -32,9 +32,12 @@ fn main() -> ! {
 
     rprintln!("Initializing modem");
     let mut modem = nrf_modem_nal::Modem::new(None).unwrap();
+    let mut lte = modem.lte_socket().unwrap();
+    nb::block!(modem.lte_connect(&mut lte)).unwrap();
 
+    do_dns(&mut modem);
     // do_tcp(&mut modem);
-    do_gnss(&mut modem);
+    // do_gnss(&mut modem);
 
     loop {
         cortex_m::asm::bkpt();
@@ -100,6 +103,10 @@ fn do_gnss(modem: &mut Modem) {
     modem.gnss_close(gnss_socket).unwrap();
 
     rprintln!("End: {:?}", modem.debug());
+}
+
+fn do_dns(modem: &mut Modem) {
+    rprintln!("Dns for tweedegolf.nl: {:?}", nb::block!(modem.get_host_by_name("tweedegolf.nl", nrf_modem_nal::embedded_nal::AddrType::IPv4)));
 }
 
 #[link_section = ".spm"]
