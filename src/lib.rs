@@ -13,20 +13,22 @@ pub mod udp;
 pub use embedded_nal;
 pub use nrfxlib::{application_irq_handler, ipc_irq_handler, trace_irq_handler};
 
+pub type GpsPowerCallback = fn(bool, &mut Modem) -> Result<(), Error>;
+
 pub struct Modem {
     state: ModemState,
-    gps_power_callback: fn(bool, &mut Self),
+    gps_power_callback: GpsPowerCallback,
 }
 
 impl Modem {
-    pub fn new(gps_power_callback: Option<fn(bool, &mut Self)>) -> Result<Self, Error> {
+    pub fn new(gps_power_callback: Option<GpsPowerCallback>) -> Result<Self, Error> {
         nrfxlib::init()?;
         nrfxlib::modem::off()?;
         nrfxlib::modem::set_system_mode(nrfxlib::modem::SystemMode::LteMAndGnss)?;
 
         Ok(Self {
             state: ModemState::default(),
-            gps_power_callback: gps_power_callback.unwrap_or(|_, _| {}),
+            gps_power_callback: gps_power_callback.unwrap_or(|_, _| Ok(())),
         })
     }
 
