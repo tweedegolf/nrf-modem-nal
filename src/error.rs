@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     NrfModem(nrfxlib::Error),
     NrfSys(i32),
