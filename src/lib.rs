@@ -44,6 +44,12 @@ impl Modem {
             (0, 0) => {}
             // Turning on
             (0, _) => {
+                // Set Ultra low power mode.
+                nrfxlib::at::send_at_command("AT%XDATAPRFL=0", |_| {})?;
+                // Set UICC low power mode
+                nrfxlib::at::send_at_command("AT+CEPPI=1", |_| {})?;
+                // Set Power Saving Mode (PSM)
+                nrfxlib::at::send_at_command("AT+CPSMS=1", |_| {})?;
                 // Activate LTE without changing GNSS
                 nrfxlib::at::send_at_command("AT+CFUN=21", |_| {})?;
             }
@@ -65,8 +71,8 @@ impl Modem {
             (0, 0) => {}
             // Turning on
             (0, _) => {
-                // Activate GNSS without changing LTE
                 (self.gps_power_callback)(true, self)?;
+                // Activate GNSS without changing LTE
                 nrfxlib::at::send_at_command("AT+CFUN=31", |_| {})?;
             }
             // Turning off
