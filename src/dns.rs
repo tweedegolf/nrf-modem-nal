@@ -10,6 +10,10 @@ impl embedded_nal::Dns for Modem {
         hostname: &str,
         addr_type: embedded_nal::AddrType,
     ) -> embedded_nal::nb::Result<embedded_nal::IpAddr, Self::Error> {
+        if let Ok(ip) = hostname.parse() {
+            return Ok(ip);
+        }
+
         let target_family = match addr_type {
             embedded_nal::AddrType::IPv4 => nrfxlib_sys::NRF_AF_INET,
             embedded_nal::AddrType::IPv6 => nrfxlib_sys::NRF_AF_INET6,
