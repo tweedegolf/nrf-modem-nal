@@ -51,9 +51,8 @@ impl Modem {
     }
 
     pub fn lte_close(&mut self, mut socket: LteSocket) -> Result<(), Error> {
-        self.at_close(socket.inner)?;
-
         socket.state = SocketState::Closed;
+        self.at_close(socket.inner)?;
 
         let mut new_state = self.state.clone();
         new_state.active_lte_sockets -= 1;
