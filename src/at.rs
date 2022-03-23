@@ -71,10 +71,6 @@ impl Modem {
         socket.state = SocketState::Closed;
         drop(socket);
 
-        let mut new_state = self.state.clone();
-        new_state.active_lte_sockets -= 1;
-        self.change_state(new_state)?;
-
         Ok(())
     }
 }

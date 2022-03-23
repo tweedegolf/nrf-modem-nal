@@ -3,6 +3,8 @@ pub enum Error {
     NrfModem(nrfxlib::Error),
     NrfSys(i32),
     AddressNotFound,
+    HostnameTooLong,
+    HostnameNotAscii,
     SocketAlreadyOpen,
     SocketClosed,
     Fmt(core::fmt::Error),

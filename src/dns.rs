@@ -1,5 +1,6 @@
-use embedded_nal::{Ipv4Addr, Ipv6Addr};
+use core::str::FromStr;
 
+use embedded_nal::{Ipv4Addr, Ipv6Addr};
 use crate::{to_nb_result, Modem};
 
 impl embedded_nal::Dns for Modem {
@@ -12,6 +13,10 @@ impl embedded_nal::Dns for Modem {
     ) -> embedded_nal::nb::Result<embedded_nal::IpAddr, Self::Error> {
         if let Ok(ip) = hostname.parse() {
             return Ok(ip);
+        }
+
+        if !hostname.is_ascii() {
+            return to_nb_result(Err(Self::Error::HostnameNotAscii));
         }
 
         let target_family = match addr_type {
@@ -36,6 +41,10 @@ impl embedded_nal::Dns for Modem {
             };
 
             let mut result: *mut nrfxlib_sys::nrf_addrinfo = core::ptr::null_mut();
+
+            // A hostname should at most be 256 chars, but we have a null char as well, so we add one
+            let mut hostname = heapless::String::<257>::from_str(hostname).map_err(|_| Self::Error::HostnameTooLong)?;
+            hostname.push('\0').map_err(|_| Self::Error::HostnameTooLong)?;
 
             let err = nrfxlib_sys::nrf_getaddrinfo(
                 hostname.as_ptr(),
