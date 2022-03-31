@@ -1,7 +1,6 @@
-use core::str::FromStr;
-
-use embedded_nal::{Ipv4Addr, Ipv6Addr};
 use crate::{to_nb_result, Modem};
+use core::str::FromStr;
+use embedded_nal::{Ipv4Addr, Ipv6Addr};
 
 impl embedded_nal::Dns for Modem {
     type Error = crate::Error;
@@ -43,8 +42,11 @@ impl embedded_nal::Dns for Modem {
             let mut result: *mut nrfxlib_sys::nrf_addrinfo = core::ptr::null_mut();
 
             // A hostname should at most be 256 chars, but we have a null char as well, so we add one
-            let mut hostname = heapless::String::<257>::from_str(hostname).map_err(|_| Self::Error::HostnameTooLong)?;
-            hostname.push('\0').map_err(|_| Self::Error::HostnameTooLong)?;
+            let mut hostname = heapless::String::<257>::from_str(hostname)
+                .map_err(|_| Self::Error::HostnameTooLong)?;
+            hostname
+                .push('\0')
+                .map_err(|_| Self::Error::HostnameTooLong)?;
 
             let err = nrfxlib_sys::nrf_getaddrinfo(
                 hostname.as_ptr(),
@@ -61,38 +63,50 @@ impl embedded_nal::Dns for Modem {
                 return to_nb_result(Err(crate::Error::AddressNotFound));
             }
 
-            while result != core::ptr::null_mut() {
+            'outer: while result != core::ptr::null_mut() {
                 let address = &*(*result).ai_addr;
 
                 if address.sa_family == nrfxlib_sys::NRF_AF_INET as i32 {
-                    let address_data = address.sa_data.as_slice(address.sa_len as usize);
-                    found_ip = Some(embedded_nal::IpAddr::V4(Ipv4Addr::new(
-                        address_data[0],
-                        address_data[1],
-                        address_data[2],
-                        address_data[3],
-                    )));
-                    if address.sa_family == target_family as i32 {
-                        break;
+                    let address_data: &[u8] = address.sa_data.as_slice(address.sa_len as usize);
+                    // So the address data can be much longer than the 4 bytes we need for the IP address
+                    // And the address may not even start at the first byte!
+                    // From what I've seen it can also start at the 4th byte.
+                    // So we're going to chunk right through it and return the first global IP address we can find
+                    for chunk_data in address_data.chunks_exact(4) {
+                        found_ip = Some(embedded_nal::IpAddr::V4(Ipv4Addr::new(
+                            chunk_data[0],
+                            chunk_data[1],
+                            chunk_data[2],
+                            chunk_data[3],
+                        )));
+                        if found_ip.unwrap().is_global()
+                            && address.sa_family == target_family as i32
+                        {
+                            break 'outer;
+                        }
                     }
                 } else if address.sa_family == nrfxlib_sys::NRF_AF_INET6 as i32 {
                     let address_data = address.sa_data.as_slice(address.sa_len as usize);
-                    found_ip = Some(embedded_nal::IpAddr::V6(Ipv6Addr::new(
-                        u16::from_be_bytes(address_data[0..2].try_into().unwrap()),
-                        u16::from_be_bytes(address_data[2..4].try_into().unwrap()),
-                        u16::from_be_bytes(address_data[4..6].try_into().unwrap()),
-                        u16::from_be_bytes(address_data[6..8].try_into().unwrap()),
-                        u16::from_be_bytes(address_data[8..10].try_into().unwrap()),
-                        u16::from_be_bytes(address_data[10..12].try_into().unwrap()),
-                        u16::from_be_bytes(address_data[12..14].try_into().unwrap()),
-                        u16::from_be_bytes(address_data[14..16].try_into().unwrap()),
-                    )));
-                    if address.sa_family == target_family as i32 {
-                        break;
+                    for chunk_data in address_data.chunks_exact(16) {
+                        found_ip = Some(embedded_nal::IpAddr::V6(Ipv6Addr::new(
+                            u16::from_be_bytes(chunk_data[0..2].try_into().unwrap()),
+                            u16::from_be_bytes(chunk_data[2..4].try_into().unwrap()),
+                            u16::from_be_bytes(chunk_data[4..6].try_into().unwrap()),
+                            u16::from_be_bytes(chunk_data[6..8].try_into().unwrap()),
+                            u16::from_be_bytes(chunk_data[8..10].try_into().unwrap()),
+                            u16::from_be_bytes(chunk_data[10..12].try_into().unwrap()),
+                            u16::from_be_bytes(chunk_data[12..14].try_into().unwrap()),
+                            u16::from_be_bytes(chunk_data[14..16].try_into().unwrap()),
+                        )));
+                        if found_ip.unwrap().is_global()
+                            && address.sa_family == target_family as i32
+                        {
+                            break 'outer;
+                        }
                     }
-                } else {
-                    result = (*result).ai_next;
                 }
+
+                result = (*result).ai_next;
             }
 
             nrfxlib_sys::nrf_freeaddrinfo(result);
