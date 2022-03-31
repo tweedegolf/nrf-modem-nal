@@ -49,7 +49,7 @@ impl Modem {
 
     pub fn gnss_close(&mut self, mut socket: GnssSocket) -> Result<(), Error> {
         socket.state = SocketState::Closed;
-        socket.inner.stop()?;
+        drop(socket);
 
         let mut new_state = self.state.clone();
         new_state.active_gnss_sockets -= 1;
