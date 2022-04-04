@@ -59,11 +59,11 @@ impl embedded_nal::Dns for Modem {
                 return to_nb_result(Err(crate::Error::NrfSys(nrfxlib::get_last_error())));
             }
 
-            if result == core::ptr::null_mut() {
+            if result.is_null() {
                 return to_nb_result(Err(crate::Error::AddressNotFound));
             }
 
-            'outer: while result != core::ptr::null_mut() {
+            'outer: while !result.is_null() {
                 let address = &*(*result).ai_addr;
 
                 if address.sa_family == nrfxlib_sys::NRF_AF_INET as i32 {

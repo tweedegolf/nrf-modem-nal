@@ -53,7 +53,7 @@ impl embedded_nal::TcpClientStack for Modem {
             return nb::Result::Err(nb::Error::Other(Error::SocketClosed));
         }
 
-        match socket.inner.send(buffer) {
+        match crate::helpers::send(&socket.inner, buffer) {
             Ok(Some(amount)) => nb::Result::Ok(amount),
             Ok(None) => nb::Result::Err(nb::Error::WouldBlock),
             Err(e) => nb::Result::Err(nb::Error::Other(e.into())),

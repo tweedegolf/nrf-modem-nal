@@ -2,6 +2,7 @@ use crate::{error::Error, Modem, SocketState};
 use embedded_nal::nb;
 
 impl Modem {
+    /// Create an AT socket with which you can communicate with the modem directly
     pub fn at_socket(&mut self) -> Result<AtSocket, Error> {
         Ok(AtSocket {
             inner: nrfxlib::at::AtSocket::new()?,

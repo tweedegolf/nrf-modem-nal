@@ -7,6 +7,7 @@ use crate::{at::AtSocket, error::Error, to_nb_result, Modem, SocketState};
 use embedded_nal::nb;
 
 impl Modem {
+    /// Get an AT socket, but where the LTE is also active at the same time
     pub fn lte_socket(&mut self) -> Result<LteSocket, Error> {
         Ok(LteSocket {
             inner: self.at_socket()?,

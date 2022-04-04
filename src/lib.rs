@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 #![no_std]
 
 use embedded_nal::nb;
@@ -7,6 +8,7 @@ pub mod at;
 pub mod dns;
 pub mod error;
 pub mod gnss;
+pub mod helpers;
 pub mod lte;
 pub mod tcp;
 pub mod udp;

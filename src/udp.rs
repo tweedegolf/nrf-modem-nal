@@ -50,7 +50,7 @@ impl embedded_nal::UdpClientStack for Modem {
             return nb::Result::Err(nb::Error::Other(Error::SocketClosed));
         }
 
-        match socket.inner.send(buffer) {
+        match crate::helpers::send(&socket.inner, buffer) {
             Ok(Some(_)) => nb::Result::Ok(()),
             Ok(None) => nb::Result::Err(nb::Error::WouldBlock),
             Err(e) => nb::Result::Err(nb::Error::Other(e.into())),
