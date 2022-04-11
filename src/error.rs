@@ -11,6 +11,11 @@ pub enum Error {
     AtParsing(at_commands::parser::ParseError),
     NoAtResponse,
     UnexpectedAtResponse,
+    InvalidConfiguration,
+    NotAllowedInActiveState,
+    InvalidBandConfiguration,
+    /// A buffer was too small. The number indicates how big the buffer has to be (if that can be determined).
+    BufferTooSmall(Option<usize>),
 }
 
 impl From<nrfxlib::Error> for Error {
