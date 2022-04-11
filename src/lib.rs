@@ -132,9 +132,6 @@ impl Modem {
 
         if let Some(values) = values {
             let (_, stat) = to_nb_result(values)?;
-
-            log::info!("Waiting for lte, stat: {}", stat);
-
             if stat == 1 || stat == 5 {
                 Ok(())
             } else {
