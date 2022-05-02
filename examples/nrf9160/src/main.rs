@@ -7,9 +7,9 @@ extern crate tinyrlibc;
 use hal::pac::{self, interrupt};
 use nrf9160_hal as hal;
 use nrf_modem_nal::{
-    embedded_nal::{nb, SocketAddr, TcpClientStack, Dns},
+    embedded_nal::{nb, Dns, SocketAddr, TcpClientStack},
     gnss::{GnssData, GnssOptions},
-    Modem,
+    ConnectionPreference, Modem, SystemMode,
 };
 use rtt_target::{rprintln, rtt_init_print};
 
@@ -31,12 +31,23 @@ fn main() -> ! {
     }
 
     rprintln!("Initializing modem");
-    let mut modem = nrf_modem_nal::Modem::new(None).unwrap();
-    let mut lte = modem.lte_socket().unwrap();
-    nb::block!(modem.lte_connect(&mut lte)).unwrap();
+    let mut modem = nrf_modem_nal::Modem::new(
+        None,
+        SystemMode {
+            gnss_support: true,
+            lte_support: false,
+            nbiot_support: true,
+            preference: ConnectionPreference::Nbiot,
+        },
+    )
+    .unwrap();
+    // let mut lte = modem.lte_socket().unwrap();
+    rprintln!("Connecting to lte");
+    // nb::block!(modem.lte_connect(&mut lte)).unwrap();
+    rprintln!("Done");
 
-    do_dns(&mut modem);
-    // do_tcp(&mut modem);
+    // do_dns(&mut modem);
+    do_tcp(&mut modem);
     // do_gnss(&mut modem);
 
     loop {
@@ -106,7 +117,12 @@ fn do_gnss(modem: &mut Modem) {
 }
 
 fn do_dns(modem: &mut Modem) {
-    rprintln!("Dns for tweedegolf.nl: {:?}", nb::block!(modem.get_host_by_name("tweedegolf.nl", nrf_modem_nal::embedded_nal::AddrType::IPv4)));
+    rprintln!(
+        "Dns for tweedegolf.nl: {:?}",
+        nb::block!(
+            modem.get_host_by_name("tweedegolf.nl", nrf_modem_nal::embedded_nal::AddrType::IPv4)
+        )
+    );
 }
 
 #[link_section = ".spm"]

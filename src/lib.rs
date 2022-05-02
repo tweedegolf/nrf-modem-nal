@@ -15,6 +15,7 @@ pub mod udp;
 
 pub use embedded_nal;
 pub use nrfxlib::{application_irq_handler, ipc_irq_handler, trace_irq_handler};
+use rtt_target::rprintln;
 
 pub type GpsPowerCallback = fn(bool, &mut Modem) -> Result<(), Error>;
 
@@ -24,7 +25,10 @@ pub struct Modem {
 }
 
 impl Modem {
-    pub fn new(gps_power_callback: Option<GpsPowerCallback>, mode: SystemMode) -> Result<Self, Error> {
+    pub fn new(
+        gps_power_callback: Option<GpsPowerCallback>,
+        mode: SystemMode,
+    ) -> Result<Self, Error> {
         nrfxlib::init()?;
         nrfxlib::modem::off()?;
 
@@ -32,6 +36,8 @@ impl Modem {
             state: ModemState::default(),
             gps_power_callback: gps_power_callback.unwrap_or(|_, _| Ok(())),
         };
+
+        // nrfxlib::at::send_at_command("AT%XEPCO=0", |_| {})?;
 
         s.set_system_mode(mode)?;
 
@@ -60,8 +66,12 @@ impl Modem {
         self.at_close(at)?;
 
         match execute_result {
-            Err(Error::NrfModem(nrfxlib::Error::AtError(nrfxlib::AtError::CmeError(518)))) => Err(Error::NotAllowedInActiveState),
-            Err(Error::NrfModem(nrfxlib::Error::AtError(nrfxlib::AtError::CmeError(522)))) => Err(Error::InvalidBandConfiguration),
+            Err(Error::NrfModem(nrfxlib::Error::AtError(nrfxlib::AtError::CmeError(518)))) => {
+                Err(Error::NotAllowedInActiveState)
+            }
+            Err(Error::NrfModem(nrfxlib::Error::AtError(nrfxlib::AtError::CmeError(522)))) => {
+                Err(Error::InvalidBandConfiguration)
+            }
             result => result,
         }
     }
@@ -73,14 +83,14 @@ impl Modem {
             (0, 0) => {}
             // Turning on
             (0, _) => {
-                // Set Ultra low power mode.
-                nrfxlib::at::send_at_command("AT%XDATAPRFL=0", |_| {})?;
-                // Set UICC low power mode
-                nrfxlib::at::send_at_command("AT+CEPPI=1", |_| {})?;
-                // Set Power Saving Mode (PSM)
-                nrfxlib::at::send_at_command("AT+CPSMS=1", |_| {})?;
+                // // Set Ultra low power mode.
+                // nrfxlib::at::send_at_command("AT%XDATAPRFL=0", |_| {})?;
+                // // Set UICC low power mode
+                // nrfxlib::at::send_at_command("AT+CEPPI=1", |_| {})?;
+                // // Set Power Saving Mode (PSM)
+                // nrfxlib::at::send_at_command("AT+CPSMS=1", |_| {})?;
                 // Activate LTE without changing GNSS
-                nrfxlib::at::send_at_command("AT+CFUN=21", |_| {})?;
+                nrfxlib::at::send_at_command("AT+CFUN=1", |_| {})?;
             }
             // Turning off
             (_, 0) => {
@@ -121,6 +131,7 @@ impl Modem {
     fn wait_for_lte(&mut self) -> nb::Result<(), Error> {
         let mut values = None;
         to_nb_result(nrfxlib::at::send_at_command("AT+CEREG?", |val| {
+            rprintln!("{}", val);
             values = Some(
                 at_commands::parser::CommandParser::parse(val.as_bytes())
                     .expect_identifier(b"+CEREG:")
@@ -206,8 +217,12 @@ impl SystemMode {
             ConnectionPreference::None => true,
             ConnectionPreference::Lte => self.lte_support,
             ConnectionPreference::Nbiot => self.nbiot_support,
-            ConnectionPreference::NetworkPreferenceWithLteFallback => self.lte_support && self.nbiot_support,
-            ConnectionPreference::NetworkPreferenceWithNbiotFallback => self.lte_support && self.nbiot_support,
+            ConnectionPreference::NetworkPreferenceWithLteFallback => {
+                self.lte_support && self.nbiot_support
+            }
+            ConnectionPreference::NetworkPreferenceWithNbiotFallback => {
+                self.lte_support && self.nbiot_support
+            }
         }
     }
 

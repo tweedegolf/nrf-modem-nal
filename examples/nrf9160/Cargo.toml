@@ -16,3 +16,7 @@ nrf-modem-nal = { path = "../../" }
 [profile.release]
 debug = true
 lto = true
+
+[patch.crates-io]
+# We have to use a fork to get an updated nrf9160-pac version
+nrfxlib = { git = "https://github.com/folkertdev/nrfxlib", rev = "a5672efcaeaf8f4485d755e086cb36c00f79ca78" }
