@@ -37,7 +37,7 @@ impl Modem {
             gps_power_callback: gps_power_callback.unwrap_or(|_, _| Ok(())),
         };
 
-        // nrfxlib::at::send_at_command("AT%XEPCO=0", |_| {})?;
+        nrfxlib::at::send_at_command("AT%XEPCO=0", |_| {})?;
 
         s.set_system_mode(mode)?;
 
@@ -90,7 +90,7 @@ impl Modem {
                 // // Set Power Saving Mode (PSM)
                 // nrfxlib::at::send_at_command("AT+CPSMS=1", |_| {})?;
                 // Activate LTE without changing GNSS
-                nrfxlib::at::send_at_command("AT+CFUN=1", |_| {})?;
+                nrfxlib::at::send_at_command("AT+CFUN=21", |_| {})?;
             }
             // Turning off
             (_, 0) => {
@@ -131,18 +131,19 @@ impl Modem {
     fn wait_for_lte(&mut self) -> nb::Result<(), Error> {
         let mut values = None;
         to_nb_result(nrfxlib::at::send_at_command("AT+CEREG?", |val| {
-            rprintln!("{}", val);
+            rprintln!("LTE:  {}", val);
             values = Some(
                 at_commands::parser::CommandParser::parse(val.as_bytes())
                     .expect_identifier(b"+CEREG:")
                     .expect_int_parameter()
                     .expect_int_parameter()
-                    .finish(),
+                    .finish()
+                    .map(|(_, stat)| stat),
             );
         }))?;
 
         if let Some(values) = values {
-            let (_, stat) = to_nb_result(values)?;
+            let stat = to_nb_result(values)?;
             if stat == 1 || stat == 5 {
                 Ok(())
             } else {

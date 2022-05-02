@@ -4,7 +4,10 @@
 // links in a minimal version of libc
 extern crate tinyrlibc;
 
-use hal::pac::{self, interrupt};
+use hal::{
+    pac::{self, interrupt},
+    prelude::*,
+};
 use nrf9160_hal as hal;
 use nrf_modem_nal::{
     embedded_nal::{nb, Dns, SocketAddr, TcpClientStack},
@@ -18,7 +21,14 @@ fn main() -> ! {
     rtt_init_print!();
 
     let mut cp = cortex_m::Peripherals::take().unwrap();
-    let _dp = nrf9160_hal::pac::Peripherals::take().unwrap();
+    let dp = nrf9160_hal::pac::Peripherals::take().unwrap();
+
+    let pins0 = hal::gpio::p0::Parts::new(dp.P0_NS);
+    // Turn the LED on
+    let mut led_blue = pins0
+        .p0_03
+        .into_push_pull_output(hal::gpio::Level::Low)
+        .degrade();
 
     // Enable the modem interrupts
     unsafe {
@@ -34,21 +44,45 @@ fn main() -> ! {
     let mut modem = nrf_modem_nal::Modem::new(
         None,
         SystemMode {
-            gnss_support: true,
+            gnss_support: false,
             lte_support: false,
             nbiot_support: true,
             preference: ConnectionPreference::Nbiot,
         },
     )
     .unwrap();
-    // let mut lte = modem.lte_socket().unwrap();
+
+    let mut at = modem.at_socket().unwrap();
+    modem.at_connect(&mut at).unwrap();
+    modem.at_send(&mut at, "AT+CNEC=24").unwrap();
+    let mut buffer = [0; 1024];
+    nb::block!(modem.at_receive(&mut at, &mut buffer)).unwrap();
+
+    let mut lte = modem.lte_socket().unwrap();
     rprintln!("Connecting to lte");
-    // nb::block!(modem.lte_connect(&mut lte)).unwrap();
+    loop {
+        match modem.at_receive(&mut at, &mut buffer) {
+            Ok(count) => {
+                rprintln!("AT:  {}", core::str::from_utf8(&buffer[..count]).unwrap());
+                panic!("Test");
+            }
+            _ => {}
+        }
+
+        match modem.lte_connect(&mut lte) {
+            Ok(val) => break Ok(val),
+            Err(nb::Error::WouldBlock) => continue,
+            Err(e) => break Err(e),
+        }
+    }
+    .unwrap();
     rprintln!("Done");
 
-    // do_dns(&mut modem);
+    do_dns(&mut modem);
     do_tcp(&mut modem);
     // do_gnss(&mut modem);
+
+    led_blue.set_high().unwrap();
 
     loop {
         cortex_m::asm::bkpt();
@@ -159,6 +193,6 @@ unsafe fn HardFault(frame: &cortex_m_rt::ExceptionFrame) -> ! {
 fn panic(info: &core::panic::PanicInfo) -> ! {
     rprintln!("{}", info);
     loop {
-        cortex_m::asm::bkpt();
+        cortex_m::asm::udf();
     }
 }
