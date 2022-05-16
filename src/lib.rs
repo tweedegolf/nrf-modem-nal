@@ -92,6 +92,8 @@ impl Modem {
     }
 
     fn wait_for_lte(&mut self) -> nb::Result<(), Error> {
+        log::trace!("Waiting for LTE");
+
         let mut values = None;
         to_nb_result(nrfxlib::at::send_at_command("AT+CEREG?", |val| {
             values = Some(
@@ -105,6 +107,7 @@ impl Modem {
 
         if let Some(values) = values {
             let (_, stat) = to_nb_result(values)?;
+            log::trace!("LTE status: {stat}");
             if stat == 1 || stat == 5 {
                 Ok(())
             } else {
