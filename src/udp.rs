@@ -1,4 +1,4 @@
-use crate::{error::Error, Modem, SocketState};
+use crate::{error::Error, log, Modem, SocketState};
 use core::fmt::Write;
 use embedded_nal::{
     nb::{self},
@@ -10,6 +10,8 @@ impl embedded_nal::UdpClientStack for Modem {
     type Error = Error;
 
     fn socket(&mut self) -> Result<Self::UdpSocket, Self::Error> {
+        log::debug!("Creating UDP socket");
+
         Ok(UdpSocket {
             inner: nrfxlib::udp::UdpSocket::new()?,
             state: SocketState::Closed,
@@ -22,6 +24,8 @@ impl embedded_nal::UdpClientStack for Modem {
         socket: &mut Self::UdpSocket,
         remote: embedded_nal::SocketAddr,
     ) -> Result<(), Self::Error> {
+        log::trace!("Connecting UDP socket to {}", remote);
+
         if socket.state.is_connected() {
             return Err(Error::SocketAlreadyOpen);
         }
@@ -42,16 +46,23 @@ impl embedded_nal::UdpClientStack for Modem {
         socket.state = SocketState::Connected;
         socket.remote_address = Some(remote);
 
+        log::debug!("Connected UDP socket");
+
         Ok(())
     }
 
     fn send(&mut self, socket: &mut Self::UdpSocket, buffer: &[u8]) -> nb::Result<(), Self::Error> {
+        log::trace!("Sending to UDP socket");
+
         if !socket.state.is_connected() {
             return nb::Result::Err(nb::Error::Other(Error::SocketClosed));
         }
 
         match crate::helpers::send(&socket.inner, buffer) {
-            Ok(Some(_)) => nb::Result::Ok(()),
+            Ok(Some(_)) => {
+                log::debug!("Sent {} bytes from UDP socket", buffer.len());
+                nb::Result::Ok(())
+            },
             Ok(None) => nb::Result::Err(nb::Error::WouldBlock),
             Err(e) => nb::Result::Err(nb::Error::Other(e.into())),
         }
@@ -62,18 +73,25 @@ impl embedded_nal::UdpClientStack for Modem {
         socket: &mut Self::UdpSocket,
         buffer: &mut [u8],
     ) -> nb::Result<(usize, embedded_nal::SocketAddr), Self::Error> {
+        log::trace!("Receiving from UDP socket");
+
         if !socket.state.is_connected() {
             return nb::Result::Err(nb::Error::Other(Error::SocketClosed));
         }
 
         match socket.inner.recv(buffer) {
-            Ok(Some(amount)) => nb::Result::Ok((amount, socket.remote_address.unwrap())),
+            Ok(Some(amount)) => {
+                log::debug!("Received {amount} bytes from UDP socket");
+                nb::Result::Ok((amount, socket.remote_address.unwrap()))
+            },
             Ok(None) => nb::Result::Err(nb::Error::WouldBlock),
             Err(e) => nb::Result::Err(nb::Error::Other(e.into())),
         }
     }
 
     fn close(&mut self, mut socket: Self::UdpSocket) -> Result<(), Self::Error> {
+        log::debug!("Closing UDP socket");
+
         socket.state = SocketState::Closed;
         drop(socket);
 

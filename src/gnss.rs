@@ -1,10 +1,12 @@
-use crate::{error::Error, to_nb_result, Modem, SocketState};
+use crate::{error::Error, log, to_nb_result, Modem, SocketState};
 use embedded_nal::nb;
 
 pub use nrfxlib::gnss::{DeleteMask, GnssData, NmeaMask};
 
 impl Modem {
     pub fn gnss_socket(&mut self) -> Result<GnssSocket, Error> {
+        log::debug!("Creating GNSS socket");
+
         Ok(GnssSocket {
             inner: nrfxlib::gnss::GnssSocket::new()?,
             state: SocketState::Closed,
@@ -16,6 +18,8 @@ impl Modem {
         socket: &mut GnssSocket,
         options: GnssOptions,
     ) -> Result<(), Error> {
+        log::trace!("Connecting GNSS socket");
+
         if socket.state.is_connected() {
             return Err(Error::SocketAlreadyOpen);
         }
@@ -31,10 +35,14 @@ impl Modem {
         socket.inner.start(options.delete_mask)?;
         socket.state = SocketState::Connected;
 
+        log::debug!("Connected GNSS socket");
+
         Ok(())
     }
 
     pub fn gnss_receive(&mut self, socket: &mut GnssSocket) -> nb::Result<GnssData, Error> {
+        log::trace!("Receiving on GNSS socket");
+
         if !socket.state.is_connected() {
             return nb::Result::Err(nb::Error::Other(Error::SocketClosed));
         }
@@ -48,6 +56,8 @@ impl Modem {
     }
 
     pub fn gnss_close(&mut self, mut socket: GnssSocket) -> Result<(), Error> {
+        log::debug!("Closing GNSS socket");
+
         socket.state = SocketState::Closed;
         drop(socket);
 

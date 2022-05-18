@@ -9,6 +9,7 @@ pub mod dns;
 pub mod error;
 pub mod gnss;
 pub mod helpers;
+pub mod log;
 pub mod lte;
 pub mod tcp;
 pub mod udp;
@@ -46,6 +47,7 @@ impl Modem {
             (0, 0) => {}
             // Turning on
             (0, _) => {
+                log::debug!("Turning on modem lte");
                 // Set Ultra low power mode.
                 nrfxlib::at::send_at_command("AT%XDATAPRFL=0", |_| {})?;
                 // Set UICC low power mode
@@ -57,6 +59,7 @@ impl Modem {
             }
             // Turning off
             (_, 0) => {
+                log::debug!("Turning off modem lte");
                 // Deactivate LTE without changing GNSS
                 nrfxlib::at::send_at_command("AT+CFUN=20", |_| {})?;
             }
@@ -73,12 +76,14 @@ impl Modem {
             (0, 0) => {}
             // Turning on
             (0, _) => {
+                log::debug!("Turning on modem gnss");
                 (self.gps_power_callback)(true, self)?;
                 // Activate GNSS without changing LTE
                 nrfxlib::at::send_at_command("AT+CFUN=31", |_| {})?;
             }
             // Turning off
             (_, 0) => {
+                log::debug!("Turning off modem gnss");
                 // Deactivate GNSS without changing LTE
                 (self.gps_power_callback)(false, self)?;
                 nrfxlib::at::send_at_command("AT+CFUN=30", |_| {})?;
@@ -108,10 +113,12 @@ impl Modem {
         if let Some(values) = values {
             let (_, stat) = to_nb_result(values)?;
             log::trace!("LTE status: {stat}");
-            if stat == 1 || stat == 5 {
-                Ok(())
-            } else {
-                Err(nb::Error::WouldBlock)
+            match stat {
+                1 | 5 => Ok(()),
+                0 | 2 | 4 => Err(nb::Error::WouldBlock),
+                3 => to_nb_result(Err(Error::LteRegistrationDenied)),
+                90 => to_nb_result(Err(Error::SimFailure)),
+                _ => to_nb_result(Err(Error::UnexpectedAtResponse)),
             }
         } else {
             to_nb_result(Err(Error::NoAtResponse))

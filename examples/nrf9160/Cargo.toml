@@ -10,9 +10,15 @@ cortex-m-rt = "0.7.0"
 rtt-target = { version = "0.3.1", features = ["cortex-m"] }
 nrf9160-hal = "0.15.0"
 tinyrlibc = "0.2.1"
-nrf-modem-nal = { path = "../../" }
+nrf-modem-nal = { path = "../../", features = ["log"] }
+rtt-logger = "0.2.0"
+log = { version = "0.4", features = ["max_level_debug", "release_max_level_debug"] }
 
 # cargo build/run --release
 [profile.release]
 debug = true
 lto = true
+
+[patch.crates-io]
+# We have to use a fork to get an updated nrf9160-pac version
+nrfxlib = { git = "https://github.com/folkertdev/nrfxlib", rev = "a5672efcaeaf8f4485d755e086cb36c00f79ca78" }
