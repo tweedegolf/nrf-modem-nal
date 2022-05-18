@@ -11,6 +11,8 @@ pub enum Error {
     AtParsing(at_commands::parser::ParseError),
     NoAtResponse,
     UnexpectedAtResponse,
+    LteRegistrationDenied,
+    SimFailure,
 }
 
 impl From<nrfxlib::Error> for Error {

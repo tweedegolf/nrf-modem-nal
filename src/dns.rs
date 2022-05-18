@@ -1,4 +1,4 @@
-use crate::{to_nb_result, Modem};
+use crate::{log, to_nb_result, Modem};
 use core::str::FromStr;
 use embedded_nal::{Ipv4Addr, Ipv6Addr};
 
@@ -10,6 +10,8 @@ impl embedded_nal::Dns for Modem {
         hostname: &str,
         addr_type: embedded_nal::AddrType,
     ) -> embedded_nal::nb::Result<embedded_nal::IpAddr, Self::Error> {
+        log::debug!("Resolving dns hostname for \"{}\"", hostname);
+
         if let Ok(ip) = hostname.parse() {
             return Ok(ip);
         }

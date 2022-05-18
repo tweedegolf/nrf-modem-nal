@@ -12,10 +12,16 @@ use nrf_modem_nal::{
     Modem,
 };
 use rtt_target::{rprintln, rtt_init_print};
+use rtt_logger::RTTLogger;
+
+static LOGGER: RTTLogger = RTTLogger::new(log::LevelFilter::Trace);
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
     rtt_init_print!();
+
+    log::set_logger(&LOGGER).unwrap();
+    log::set_max_level(log::LevelFilter::Trace);
 
     let mut cp = cortex_m::Peripherals::take().unwrap();
     let _dp = nrf9160_hal::pac::Peripherals::take().unwrap();
@@ -36,7 +42,7 @@ fn main() -> ! {
     nb::block!(modem.lte_connect(&mut lte)).unwrap();
 
     do_dns(&mut modem);
-    // do_tcp(&mut modem);
+    do_tcp(&mut modem);
     // do_gnss(&mut modem);
 
     loop {

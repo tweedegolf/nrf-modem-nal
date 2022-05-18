@@ -3,12 +3,13 @@ use core::{
     str::FromStr,
 };
 
-use crate::{at::AtSocket, error::Error, to_nb_result, Modem, SocketState};
+use crate::{at::AtSocket, error::Error, log, to_nb_result, Modem, SocketState};
 use embedded_nal::nb;
 
 impl Modem {
     /// Get an AT socket, but where the LTE is also active at the same time
     pub fn lte_socket(&mut self) -> Result<LteSocket, Error> {
+        log::debug!("Creating LTE socket");
         Ok(LteSocket {
             inner: self.at_socket()?,
             state: SocketState::Closed,
@@ -16,6 +17,8 @@ impl Modem {
     }
 
     pub fn lte_connect(&mut self, socket: &mut LteSocket) -> nb::Result<(), Error> {
+        log::trace!("Connecting LTE socket");
+
         if socket.state.is_connected() {
             return nb::Result::Err(nb::Error::Other(Error::SocketAlreadyOpen));
         }
@@ -32,6 +35,8 @@ impl Modem {
         socket.state = SocketState::Connected;
 
         self.at_connect(&mut socket.inner)?;
+
+        log::debug!("Connected LTE socket");
 
         Ok(())
     }
@@ -52,6 +57,8 @@ impl Modem {
     }
 
     pub fn lte_close(&mut self, mut socket: LteSocket) -> Result<(), Error> {
+        log::debug!("Closing LTE socket");
+
         socket.state = SocketState::Closed;
         self.at_close(socket.inner)?;
 
