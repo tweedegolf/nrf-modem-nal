@@ -41,6 +41,8 @@ impl Modem {
     }
 
     fn change_state(&mut self, new_state: ModemState) -> Result<(), Error> {
+        log::debug!("New state: {:?}", new_state);
+
         // Check what the LTE state should be
         match (self.state.active_lte_sockets, new_state.active_lte_sockets) {
             // Staying turned off
@@ -136,6 +138,7 @@ struct ModemState {
     active_gnss_sockets: u32,
 }
 
+#[derive(Debug, Clone, Copy)]
 enum SocketState {
     Closed,
     WaitingForLte,

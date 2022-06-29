@@ -95,12 +95,16 @@ impl embedded_nal::TcpClientStack for Modem {
     fn close(&mut self, mut socket: Self::TcpSocket) -> Result<(), Self::Error> {
         log::debug!("Closing TCP socket");
 
+        let socket_state = socket.state;
+
         socket.state = SocketState::Closed;
         drop(socket);
 
-        let mut new_state = self.state.clone();
-        new_state.active_lte_sockets -= 1;
-        self.change_state(new_state)?;
+        if !socket_state.is_closed() {
+            let mut new_state = self.state.clone();
+            new_state.active_lte_sockets -= 1;
+            self.change_state(new_state)?;
+        }
 
         Ok(())
     }

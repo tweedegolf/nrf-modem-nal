@@ -92,12 +92,16 @@ impl embedded_nal::UdpClientStack for Modem {
     fn close(&mut self, mut socket: Self::UdpSocket) -> Result<(), Self::Error> {
         log::debug!("Closing UDP socket");
 
+        let socket_state = socket.state;
+
         socket.state = SocketState::Closed;
         drop(socket);
 
-        let mut new_state = self.state.clone();
-        new_state.active_lte_sockets -= 1;
-        self.change_state(new_state)?;
+        if !socket_state.is_closed() {
+            let mut new_state = self.state.clone();
+            new_state.active_lte_sockets -= 1;
+            self.change_state(new_state)?;
+        }
 
         Ok(())
     }
