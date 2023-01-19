@@ -1,3 +1,7 @@
+## 0.1.3 (19-01-23)
+
+- UICC is now disabled when the LTE is disabled to save on power draw
+
 ## 0.1.2 (06-07-22)
 
 - DNS now has a correct implementation
