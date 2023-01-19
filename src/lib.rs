@@ -56,7 +56,7 @@ impl Modem {
                 nrfxlib::at::send_at_command("AT+CEPPI=1", |_| {})?;
                 // Set Power Saving Mode (PSM)
                 nrfxlib::at::send_at_command("AT+CPSMS=1", |_| {})?;
-                // Activate LTE without changing GNSS
+                // Activate LTE without changing GNSS, this also activates UICC
                 nrfxlib::at::send_at_command("AT+CFUN=21", |_| {})?;
             }
             // Turning off
@@ -64,6 +64,8 @@ impl Modem {
                 log::debug!("Turning off modem lte");
                 // Deactivate LTE without changing GNSS
                 nrfxlib::at::send_at_command("AT+CFUN=20", |_| {})?;
+                // Deactivate UICC (Universal Integrated Circuit Card) 
+                nrfxlib::at::send_at_command("AT+CFUN=40", |_| {})?;                
             }
             // Staying turned on
             (_, _) => {}
