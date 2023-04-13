@@ -1,11 +1,11 @@
-use nrfxlib::Pollable;
-use embedded_nal::{nb, SocketAddr, TcpClientStack, UdpClientStack};
 use crate::{
     at::AtSocket,
     gnss::{GnssOptions, GnssSocket},
     lte::LteSocket,
     Modem,
 };
+use embedded_nal::{nb, SocketAddr, TcpClientStack, UdpClientStack};
+use nrfxlib::Pollable;
 
 /// Perform a non-blocking write on the socket.
 pub fn send(socket: &impl Pollable, buf: &[u8]) -> Result<Option<usize>, nrfxlib::Error> {

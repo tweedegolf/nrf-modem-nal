@@ -11,8 +11,14 @@ pub enum Error {
     AtParsing(at_commands::parser::ParseError),
     NoAtResponse,
     UnexpectedAtResponse,
+    InvalidConfiguration,
+    NotAllowedInActiveState,
+    InvalidBandConfiguration,
     LteRegistrationDenied,
+    /// Is the simcard installed?
     SimFailure,
+    /// A buffer was too small. The number indicates how big the buffer has to be (if that can be determined).
+    BufferTooSmall(Option<usize>),
 }
 
 impl From<nrfxlib::Error> for Error {

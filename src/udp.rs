@@ -62,7 +62,7 @@ impl embedded_nal::UdpClientStack for Modem {
             Ok(Some(_)) => {
                 log::debug!("Sent {} bytes from UDP socket", buffer.len());
                 nb::Result::Ok(())
-            },
+            }
             Ok(None) => nb::Result::Err(nb::Error::WouldBlock),
             Err(e) => nb::Result::Err(nb::Error::Other(e.into())),
         }
@@ -83,7 +83,7 @@ impl embedded_nal::UdpClientStack for Modem {
             Ok(Some(amount)) => {
                 log::debug!("Received {amount} bytes from UDP socket");
                 nb::Result::Ok((amount, socket.remote_address.unwrap()))
-            },
+            }
             Ok(None) => nb::Result::Err(nb::Error::WouldBlock),
             Err(e) => nb::Result::Err(nb::Error::Other(e.into())),
         }
