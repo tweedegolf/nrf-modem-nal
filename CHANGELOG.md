@@ -1,4 +1,4 @@
-## 0.1.x (13-04-23)
+## 0.2.0 (13-04-23)
 
 - Added NB-IoT support based on https://github.com/diondokter/nrf-modem and https://github.com/tweedegolf/nrf-modem-nal/tree/nb-iot
 
