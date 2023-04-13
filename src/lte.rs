@@ -60,7 +60,7 @@ impl Modem {
         log::debug!("Closing LTE socket");
 
         let socket_state = socket.state;
-        
+
         socket.state = SocketState::Closed;
         self.at_close(socket.inner)?;
 

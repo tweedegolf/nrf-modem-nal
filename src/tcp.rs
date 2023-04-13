@@ -65,7 +65,7 @@ impl embedded_nal::TcpClientStack for Modem {
             Ok(Some(amount)) => {
                 log::debug!("Sent {amount} bytes to TCP socket");
                 nb::Result::Ok(amount)
-            },
+            }
             Ok(None) => nb::Result::Err(nb::Error::WouldBlock),
             Err(e) => nb::Result::Err(nb::Error::Other(e.into())),
         }
@@ -86,7 +86,7 @@ impl embedded_nal::TcpClientStack for Modem {
             Ok(Some(amount)) => {
                 log::debug!("Received {amount} bytes from TCP socket");
                 nb::Result::Ok(amount)
-            },
+            }
             Ok(None) => nb::Result::Err(nb::Error::WouldBlock),
             Err(e) => nb::Result::Err(nb::Error::Other(e.into())),
         }
